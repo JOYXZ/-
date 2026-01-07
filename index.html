@@ -2,37 +2,76 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 食物标签识别</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI 营养师</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        :root { --primary: #07c160; }
-        body { font-family: -apple-system, system-ui, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #f2f2f2; }
-        #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; }
-        .msg { margin-bottom: 15px; padding: 12px 16px; border-radius: 12px; max-width: 85%; line-height: 1.6; font-size: 16px; word-wrap: break-word; }
-        .user { align-self: flex-end; background: var(--primary); color: white; border-top-right-radius: 2px; }
-        .bot { align-self: flex-start; background: white; color: #333; border-top-left-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .input-area { background: #f7f7f7; padding: 10px 15px; display: flex; align-items: center; border-top: 0.5px solid #ddd; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
-        input[type="text"] { flex: 1; border: none; padding: 10px 15px; border-radius: 8px; outline: none; font-size: 16px; background: white; }
-        .upload-btn { background: none; border: none; font-size: 24px; padding: 0 10px; cursor: pointer; display: flex; align-items: center; }
-        button#send { background: var(--primary); color: white; border: none; padding: 8px 18px; border-radius: 6px; margin-left: 10px; font-weight: 500; }
-        #preview-container { padding: 0 15px; background: #f2f2f2; }
-        #preview { max-width: 80px; display: none; border-radius: 4px; border: 1px solid #ccc; margin-top: 5px; }
+        /* 自定义滚动条 */
+        #chat::-webkit-scrollbar { width: 4px; }
+        #chat::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        .msg-animation {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 微信风格安全区域适配 */
+        body { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
-<body>
-    <div id="chat">
-        <div class="msg bot">你好！我是你的健康助手。点击左侧图标拍照上传食物标签，我会帮你分析成分。</div>
-    </div>
-    <div id="preview-container"><img id="preview"></div>
-    <div class="input-area">
-        <label class="upload-btn">
-            📷<input type="file" id="fileInput" hidden accept="image/*" onchange="handleFile()">
-        </label>
-        <input type="text" id="userInput" placeholder="问问成分或直接点发送...">
-        <button id="send" onclick="sendMessage()">发送</button>
+<body class="bg-[#F3F4F6] h-screen flex flex-col overflow-hidden text-gray-800">
+
+    <header class="h-14 flex items-center justify-center border-b bg-white font-bold text-lg tracking-wide shadow-sm shrink-0">
+        🥦 AI 专业营养师
+    </header>
+
+    <main id="chat" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <div class="msg-animation flex items-start">
+            <div class="bg-white px-4 py-2 border rounded-2xl rounded-tl-none shadow-sm max-w-[85%]">
+                你好！我是你的私人营养师。拍下食品标签，我为你深度解析健康程度。
+            </div>
+        </div>
+    </main>
+
+    <div id="preview-container" class="px-4 hidden">
+        <div class="relative inline-block">
+            <img id="preview" class="h-20 w-20 object-cover rounded-lg border-2 border-white shadow-md">
+            <button onclick="clearImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">×</button>
+        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <footer class="glass-effect p-3 border-t">
+        <div class="max-w-4xl mx-auto flex items-end gap-2">
+            <label class="flex items-center justify-center w-12 h-12 shrink-0 bg-white border border-gray-200 rounded-full cursor-pointer active:scale-90 transition-transform shadow-sm">
+                <span class="text-2xl">📷</span>
+                <input type="file" id="fileInput" hidden accept="image/*" onchange="handleFile()">
+            </label>
+            
+            <div class="flex-1 relative">
+                <textarea id="userInput" rows="1" 
+                    class="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-400 transition-all resize-none text-base"
+                    placeholder="输入问题或直接拍摄标签..."
+                    oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+            </div>
+
+            <button id="sendBtn" onclick="sendMessage()" 
+                class="w-12 h-12 shrink-0 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all">
+                <svg viewBox="0 0 24 24" class="w-6 h-6 fill-current"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+            </button>
+        </div>
+    </footer>
+
     <script>
         const API_KEY = 'sk-6f30d07d56ad422ab4f9c515c3e19aff'; 
         const API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
@@ -44,77 +83,70 @@
             const reader = new FileReader();
             reader.onloadend = () => {
                 currentBase64 = reader.result.split(',')[1];
-                const preview = document.getElementById('preview');
-                preview.src = reader.result;
-                preview.style.display = 'block';
+                document.getElementById('preview').src = reader.result;
+                document.getElementById('preview-container').classList.remove('hidden');
             };
             reader.readAsDataURL(file);
         }
 
+        function clearImage() {
+            currentBase64 = "";
+            document.getElementById('preview-container').classList.add('hidden');
+            document.getElementById('fileInput').value = "";
+        }
+
+        function appendMessage(role, content) {
+            const chat = document.getElementById('chat');
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} msg-animation`;
+            
+            const htmlContent = role === 'bot' ? marked.parse(content) : content;
+            const bgColor = role === 'user' ? 'bg-green-500 text-white rounded-tr-none' : 'bg-white border rounded-tl-none shadow-sm';
+            
+            wrapper.innerHTML = `<div class="${bgColor} px-4 py-2 rounded-2xl max-w-[85%] text-[16px] leading-relaxed">${htmlContent}</div>`;
+            chat.appendChild(wrapper);
+            chat.scrollTop = chat.scrollHeight;
+            return wrapper;
+        }
+
         async function sendMessage() {
             const input = document.getElementById('userInput');
-            const chat = document.getElementById('chat');
-            const text = input.value || (currentBase64 ? "请帮我识别这张图里的食物标签内容" : "");
-            
+            const text = input.value.trim();
             if (!text && !currentBase64) return;
 
-            // 显示用户消息
-            const userDiv = document.createElement('div');
-            userDiv.className = 'msg user';
-            userDiv.textContent = text + (currentBase64 ? " [图片]" : "");
-            chat.appendChild(userDiv);
-            
-            // 构造 AI 请求
-            const content = [{ type: "text", text: text }];
+            const userText = text || (currentBase64 ? "🔎 正在分析这张食品标签..." : "");
+            appendMessage('user', userText);
+
+            // 构造请求
+            const content = [{ type: "text", text: text || "请帮我详细分析这张食物标签。" }];
             if (currentBase64) {
                 content.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${currentBase64}` } });
             }
 
-            // 清理输入框和预览
-            // 构造 AI 请求：加入你定制的 6 点专业营养师指令
-            const bodyData = {
-                model: "qwen-vl-plus",
-                messages: [
-                    { 
-                        role: "system", 
-                        content: `你是一个专业的营养师。请严格按照以下步骤执行任务：
-1. 分析用户购买食品的营养成分；
-2. 识别用户拍摄照片中的食品标签（成分表、营养成分表等）；
-3. 基于识别到的标签数据进行深度分析；
-4. 通过分析成分表（如添加剂、糖、钠、油脂等），明确告诉用户该食品的健康程度；
-5. 详细列出该食品的优点（如高蛋白、无添加等）和缺点（如高热量、反式脂肪等）；
-6. 最后，请为该食品进行综合打分（满分为10分）。
-请使用清晰的标题或列表格式输出，确保回答专业、易懂且具有指导意义。` 
-                    },
-                    { 
-                        role: "user", 
-                        content: content 
-                    }
-                ]
-            };
-            currentBase64 = ""; 
+            // 重置界面
+            input.value = "";
+            input.style.height = 'auto';
+            clearImage();
 
-            // 显示“思考中...”
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'msg bot';
-            loadingDiv.textContent = "正在识别分析，请稍候...";
-            chat.appendChild(loadingDiv);
-            chat.scrollTop = chat.scrollHeight;
+            // 显示加载中
+            const loadingMsg = appendMessage('bot', '<div class="flex space-x-2"><div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div><div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0.2s"></div><div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0.4s"></div></div>');
 
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${API_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(bodyData)
+                    headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: "qwen-vl-plus",
+                        messages: [
+                            { role: "system", content: "你是一个专业的营养师。请严格按照以下步骤执行任务：1.分析营养成分 2.识别照片标签 3.深度分析数据 4.说明健康程度 5.列举优缺点 6.综合打分。请用排版精美的 Markdown 格式回答。" },
+                            { role: "user", content: content }
+                        ]
+                    })
                 });
                 const data = await response.json();
-                const result = data.choices[0].message.content;
-                loadingDiv.innerHTML = marked.parse(result);
+                loadingMsg.innerHTML = `<div class="bg-white px-4 py-2 border rounded-2xl rounded-tl-none shadow-sm max-w-[85%]">${marked.parse(data.choices[0].message.content)}</div>`;
             } catch (e) {
-                loadingDiv.textContent = "出错啦，请检查 API 额度或网络设置。";
+                loadingMsg.innerHTML = `<div class="bg-white px-4 py-2 border rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-red-500">连接超时，请重试。</div>`;
             }
             chat.scrollTop = chat.scrollHeight;
         }
