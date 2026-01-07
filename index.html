@@ -7,23 +7,23 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* 1. 全局锁定：严禁横向滑动 */
         html, body { 
             max-width: 100%; 
             overflow-x: hidden; 
             background: #ffffff;
             font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+            height: 100%;
         }
 
         #chat::-webkit-scrollbar { display: none; }
 
-        /* 2. 文章排版容器：强制宽度并允许自然换行 */
         .article-content {
             width: 100%;
             max-width: 100%;
-            padding: 0 4px; /* 给左右留一点点呼吸感 */
+            padding: 0 4px;
             word-wrap: break-word;
-            word-break: break-all; /* 防止超长化学名词撑开屏幕 */
+            overflow-wrap: break-word; /* 确保长单词自动换行 */
+            word-break: break-all;
             line-height: 1.8;
             color: #333;
         }
@@ -31,12 +31,9 @@
         .article-content h1 { font-size: 1.5rem; font-weight: 800; margin: 20px 0 10px; color: #000; }
         .article-content h2 { font-size: 1.2rem; font-weight: 700; margin: 25px 0 10px; color: #2563eb; border-left: 4px solid #2563eb; padding-left: 10px; }
         .article-content p { margin-bottom: 15px; font-size: 16px; text-align: justify; }
-
-        /* 列表优化：不再做成卡片，而是纯文本列表，节省空间 */
         .article-content ul, .article-content ol { padding-left: 20px; margin-bottom: 20px; }
-        .article-content li { margin-bottom: 10px; list-style-type: disc; }
+        .article-content li { margin-bottom: 8px; list-style-type: disc; }
 
-        /* 重点引用的金句样式 */
         .article-content blockquote {
             background: #f1f5f9;
             border-radius: 8px;
@@ -84,7 +81,7 @@
             </label>
             <div class="flex-1 bg-gray-100 rounded-full px-5 h-12 flex items-center border border-transparent focus-within:bg-white focus-within:border-blue-500 transition-all">
                 <input id="userInput" type="text" class="w-full bg-transparent outline-none text-[16px]" placeholder="想了解什么？">
-                <button onclick="sendMessage()" class="ml-2 text-blue-600 font-bold">发送</button>
+                <button id="sendBtn" onclick="sendMessage()" class="ml-2 text-blue-600 font-bold">发送</button>
             </div>
         </div>
     </footer>
@@ -119,9 +116,8 @@
             
             if (role === 'user') {
                 wrapper.className = "flex justify-end mb-8";
-                wrapper.innerHTML = `<div class="bg-gray-800 text-white px-4 py-2 rounded-2xl text-sm">${content}</div>`;
+                wrapper.innerHTML = `<div class="bg-gray-800 text-white px-4 py-2 rounded-2xl text-sm shadow-sm">${content}</div>`;
             } else {
-                // Bot 回复使用文章流模式
                 wrapper.className = "article-content animate-up mb-12";
                 wrapper.innerHTML = marked.parse(content);
             }
@@ -133,17 +129,22 @@
 
         async function sendMessage() {
             const input = document.getElementById('userInput');
+            const btn = document.getElementById('sendBtn');
             const text = input.value.trim();
             if (!text && !currentBase64) return;
 
-            appendMessage('user', text || "📷 正在为您撰写分析文章...");
-            const content = [{ type: "text", text: text || "请分析这张图片。" }];
+            // 禁用按钮，防止连点
+            btn.disabled = true;
+            btn.style.opacity = "0.5";
+
+            appendMessage('user', text || "📷 正在为您撰写分析报告...");
+            const content = [{ type: "text", text: text || "请分析这张图片中的食品。" }];
             if (currentBase64) content.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${currentBase64}` } });
 
             input.value = "";
             clearImage();
 
-            const loading = appendMessage('bot', `<p class="text-blue-500 italic">正在生成深度健康解读...</p>`);
+            const loading = appendMessage('bot', `<p class="text-blue-500 italic">正在生成深度健康解读报告...</p>`);
 
             try {
                 const response = await fetch(API_URL, {
@@ -154,14 +155,13 @@
                         messages: [
                             { 
                                 role: "system", 
-                                content: "你是一位资深营养专家。请为用户撰写一篇逻辑清晰、横向书写的分析报告。禁止使用任何表格，文字必须像普通文章段落一样从左向右横向书写。严禁提及保质期、产地等非营养信息。结尾给出一个10分制的总评分
-                                    
-                                    要求：
-1. **文章结构**：成分分析，健康程度评估、深度营养点评、优缺点对比、以及食用建议。
-2. **严禁表格**：文字必须像文章一样自然流动，从左向右横向书写。
-3. **内容聚焦**：深度解析营养成分，严禁提及保质期、产地等非营养杂讯。
-4. **视觉友好**：使用 Markdown 标题、分段、列表和引用，多使用 emoji 增加亲和力。
-5. **打分总结**：在文章结尾给出 10 分制的健康指数。`。" 
+                                content: `你是一位资深营养专家。请为用户撰写一篇逻辑清晰、横向书写的分析报告。
+                                要求：
+                                1. 文章结构：包含成分分析、健康程度评估、深度营养点评、优缺点对比及食用建议。
+                                2. 严禁使用表格：文字必须像普通文章段落一样从左向右横向书写，严禁出现纵向挤压。
+                                3. 内容聚焦：解析营养成分，严禁提及保质期、产地等非营养杂讯。
+                                4. 视觉友好：使用 Markdown 标题、分段、列表和引用，多使用 emoji。
+                                5. 打分总结：结尾给出 10 分制的健康指数。` 
                             },
                             { role: "user", content: content }
                         ]
@@ -170,7 +170,10 @@
                 const data = await response.json();
                 loading.innerHTML = marked.parse(data.choices[0].message.content);
             } catch (e) {
-                loading.innerHTML = "网络暂时无法连接。";
+                loading.innerHTML = "网络暂时无法连接，请稍后再试。";
+            } finally {
+                btn.disabled = false;
+                btn.style.opacity = "1";
             }
         }
     </script>
