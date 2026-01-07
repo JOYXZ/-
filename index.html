@@ -3,76 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AI 营养师</title>
+    <title>AI Health Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* 自定义滚动条 */
-        #chat::-webkit-scrollbar { width: 4px; }
-        #chat::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+        /* 1. 基础视觉风格 */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: linear-gradient(135deg, #f8f9ff 0%, #eef2ff 100%); 
+        }
         
-        .glass-effect {
+        #chat::-webkit-scrollbar { display: none; }
+        
+        .medical-card {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+        }
+
+        /* 2. AI 回答内容的排版美化 (Markdown) */
+        .bot-bubble table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 14px;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .bot-bubble th { background: #f0f4ff; color: #1e3a8a; padding: 10px; text-align: left; border: 1px solid #e2e8f0; }
+        .bot-bubble td { padding: 10px; border: 1px solid #e2e8f0; color: #475569; }
+        
+        .bot-bubble blockquote {
+            border-left: 4px solid #3b82f6;
+            background: #f0f7ff;
+            padding: 12px;
+            margin: 12px 0;
+            border-radius: 4px;
+            color: #1e40af;
+        }
+        
+        .bot-bubble h1 { font-size: 1.3rem; font-bold; color: #1e3a8a; margin-bottom: 12px; border-bottom: 2px solid #e0e7ff; padding-bottom: 4px; }
+        .bot-bubble h2 { font-size: 1.1rem; font-bold; color: #2563eb; margin-top: 18px; margin-bottom: 8px; display: flex; align-items: center; }
+        .bot-bubble hr { border: none; border-top: 1px dashed #cbd5e1; margin: 16px 0; }
+        .bot-bubble p { margin-bottom: 8px; }
+
+        /* 3. 动画效果 */
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .glass-footer {
             background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
-        
-        .msg-animation {
-            animation: fadeIn 0.3s ease-out forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* 微信风格安全区域适配 */
-        body { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
-<body class="bg-[#F3F4F6] h-screen flex flex-col overflow-hidden text-gray-800">
+<body class="h-screen flex flex-col overflow-hidden">
 
-    <header class="h-14 flex items-center justify-center border-b bg-white font-bold text-lg tracking-wide shadow-sm shrink-0">
-        🥦 AI 专业营养师
+    <header class="px-6 pt-10 pb-4 shrink-0">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <p class="text-blue-500 font-medium text-sm">Personal Health Coach</p>
+                <h1 class="text-2xl font-bold text-gray-900 leading-tight">AI 营养分析助手</h1>
+            </div>
+            <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-blue-50">
+                <span class="text-2xl">🥗</span>
+            </div>
+        </div>
+        <div class="bg-blue-600/5 border border-blue-100/50 rounded-2xl p-4 flex items-center gap-3 medical-card">
+            <span class="text-blue-600 text-lg">💡</span>
+            <span class="text-blue-800 text-xs font-medium">提示：拍摄食品包装背面的“营养成分表”照片，效果最佳。</span>
+        </div>
     </header>
 
-    <main id="chat" class="flex-1 overflow-y-auto p-4 space-y-4">
-        <div class="msg-animation flex items-start">
-            <div class="bg-white px-4 py-2 border rounded-2xl rounded-tl-none shadow-sm max-w-[85%]">
-                你好！我是你的私人营养师。拍下食品标签，我为你深度解析健康程度。
-            </div>
+    <main id="chat" class="flex-1 overflow-y-auto px-6 space-y-6 pb-32">
+        <div class="flex flex-col items-center justify-center py-12 opacity-30 text-center">
+            <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-4xl mb-4">📷</div>
+            <p class="text-gray-600 font-medium">等待上传标签照片...</p>
         </div>
     </main>
 
-    <div id="preview-container" class="px-4 hidden">
-        <div class="relative inline-block">
-            <img id="preview" class="h-20 w-20 object-cover rounded-lg border-2 border-white shadow-md">
-            <button onclick="clearImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">×</button>
+    <div id="preview-container" class="fixed bottom-36 left-6 hidden z-50">
+        <div class="relative group">
+            <img id="preview" class="w-28 h-28 object-cover rounded-2xl border-4 border-white shadow-2xl transition-transform group-hover:scale-105">
+            <button onclick="clearImage()" class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-lg font-bold">✕</button>
         </div>
     </div>
 
-    <footer class="glass-effect p-3 border-t">
-        <div class="max-w-4xl mx-auto flex items-end gap-2">
-            <label class="flex items-center justify-center w-12 h-12 shrink-0 bg-white border border-gray-200 rounded-full cursor-pointer active:scale-90 transition-transform shadow-sm">
-                <span class="text-2xl">📷</span>
+    <footer class="fixed bottom-0 inset-x-0 glass-footer border-t border-gray-100 pb-10 pt-4 px-6 z-40">
+        <div class="max-w-2xl mx-auto flex items-center gap-4">
+            <label class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 active:scale-90 transition-all cursor-pointer">
+                <span class="text-2xl text-white">📸</span>
                 <input type="file" id="fileInput" hidden accept="image/*" onchange="handleFile()">
             </label>
             
-            <div class="flex-1 relative">
-                <textarea id="userInput" rows="1" 
-                    class="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-400 transition-all resize-none text-base"
-                    placeholder="输入问题或直接拍摄标签..."
-                    oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+            <div class="flex-1 bg-white border border-gray-200 rounded-2xl shadow-sm flex items-center px-4 h-14 focus-within:border-blue-400 transition-colors">
+                <input id="userInput" type="text" 
+                    class="w-full bg-transparent outline-none text-gray-700 placeholder-gray-400 text-[16px]"
+                    placeholder="备注要求或直接发送...">
+                <button onclick="sendMessage()" class="ml-2 text-blue-600 font-bold hover:text-blue-800">发送</button>
             </div>
-
-            <button id="sendBtn" onclick="sendMessage()" 
-                class="w-12 h-12 shrink-0 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all">
-                <svg viewBox="0 0 24 24" class="w-6 h-6 fill-current"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
-            </button>
         </div>
+        <div class="w-32 h-1.5 bg-gray-200/60 mx-auto mt-6 rounded-full"></div>
     </footer>
 
     <script>
+        // 核心配置
         const API_KEY = 'sk-6f30d07d56ad422ab4f9c515c3e19aff'; 
         const API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
         let currentBase64 = "";
@@ -98,38 +133,45 @@
         function appendMessage(role, content) {
             const chat = document.getElementById('chat');
             const wrapper = document.createElement('div');
-            wrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} msg-animation`;
+            wrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`;
+            
+            let bubbleStyle = role === 'user' 
+                ? 'bg-blue-600 text-white rounded-2xl rounded-tr-none medical-card px-5 py-3' 
+                : 'bg-white text-gray-800 rounded-2xl rounded-tl-none medical-card p-6 border border-gray-50 bot-bubble';
             
             const htmlContent = role === 'bot' ? marked.parse(content) : content;
-            const bgColor = role === 'user' ? 'bg-green-500 text-white rounded-tr-none' : 'bg-white border rounded-tl-none shadow-sm';
+            wrapper.innerHTML = `<div class="${bubbleStyle} max-w-[92%] leading-relaxed text-[15px] shadow-sm">${htmlContent}</div>`;
             
-            wrapper.innerHTML = `<div class="${bgColor} px-4 py-2 rounded-2xl max-w-[85%] text-[16px] leading-relaxed">${htmlContent}</div>`;
             chat.appendChild(wrapper);
-            chat.scrollTop = chat.scrollHeight;
+            chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
             return wrapper;
         }
 
         async function sendMessage() {
             const input = document.getElementById('userInput');
+            const chat = document.getElementById('chat');
             const text = input.value.trim();
             if (!text && !currentBase64) return;
 
-            const userText = text || (currentBase64 ? "🔎 正在分析这张食品标签..." : "");
-            appendMessage('user', userText);
-
-            // 构造请求
-            const content = [{ type: "text", text: text || "请帮我详细分析这张食物标签。" }];
+            appendMessage('user', text || (currentBase64 ? "🔎 正在深度扫描食品成分表..." : ""));
+            
+            const content = [{ type: "text", text: text || "请按照营养师指令分析此标签。" }];
             if (currentBase64) {
                 content.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${currentBase64}` } });
             }
 
-            // 重置界面
             input.value = "";
-            input.style.height = 'auto';
             clearImage();
 
-            // 显示加载中
-            const loadingMsg = appendMessage('bot', '<div class="flex space-x-2"><div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div><div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0.2s"></div><div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0.4s"></div></div>');
+            // 思考状态动画
+            const loading = appendMessage('bot', `
+                <div class="flex items-center space-x-2 py-2">
+                    <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce"></div>
+                    <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style="animation-delay:0.2s"></div>
+                    <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style="animation-delay:0.4s"></div>
+                    <span class="text-blue-600 font-medium ml-2 text-sm italic">AI 营养师正在审阅...</span>
+                </div>
+            `);
 
             try {
                 const response = await fetch(API_URL, {
@@ -138,17 +180,18 @@
                     body: JSON.stringify({
                         model: "qwen-vl-plus",
                         messages: [
-                            { role: "system", content: "你是一个专业的营养师。请严格按照以下步骤执行任务：1.分析营养成分 2.识别照片标签 3.深度分析数据 4.说明健康程度 5.列举优缺点 6.综合打分。请用排版精美的 Markdown 格式回答。" },
+                            { role: "system", content: "你是一个专业的资深营养师。请严格按照以下格式输出分析报告：# 🥗 食品营养档案 [名称]\n\n## 📊 核心指标评分\n> 综合得分：[打分]/10\n- 健康程度：[🔴危险/🟡一般/🟢推荐]\n- 核心优缺点总结...\n\n--- \n\n## 🔍 成分深度解析\n使用表格列出：成分类型 | 含量 | 专家点评\n\n--- \n\n## 💡 专家建议\n列出推荐/禁忌人群及食用建议。多使用 Emoji，确保专业且易读。" },
                             { role: "user", content: content }
                         ]
                     })
                 });
                 const data = await response.json();
-                loadingMsg.innerHTML = `<div class="bg-white px-4 py-2 border rounded-2xl rounded-tl-none shadow-sm max-w-[85%]">${marked.parse(data.choices[0].message.content)}</div>`;
+                const result = data.choices[0].message.content;
+                loading.innerHTML = marked.parse(result);
             } catch (e) {
-                loadingMsg.innerHTML = `<div class="bg-white px-4 py-2 border rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-red-500">连接超时，请重试。</div>`;
+                loading.innerHTML = `<p class="text-red-500">❌ 诊断中断，请检查 API 额度或网络。</p>`;
             }
-            chat.scrollTop = chat.scrollHeight;
+            chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
         }
     </script>
 </body>
