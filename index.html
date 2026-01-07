@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的私人AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body { margin: 0; background: #f0f2f5; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; }
+        #chat { flex: 1; overflow-y: auto; padding: 20px; }
+        .msg { margin-bottom: 15px; padding: 10px; border-radius: 10px; max-width: 80%; word-wrap: break-word; }
+        .user { background: #007bff; color: white; margin-left: auto; }
+        .bot { background: white; color: black; border: 1px solid #ddd; }
+        .input-box { background: white; padding: 20px; display: flex; border-top: 1px solid #ddd; }
+        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; outline: none; }
+        button { margin-left: 10px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="chat"></div>
+    <div class="input-box">
+        <input type="text" id="text" placeholder="输入消息...">
+        <button onclick="send()">发送</button>
+    </div>
+
+    <script>
+        // 1. 在这里填入你的 API Key
+        const API_KEY = 'sk-6f30d07d56ad422ab4f9c515c3e19aff'; 
+
+        async function send() {
+            const input = document.getElementById('text');
+            const chat = document.getElementById('chat');
+            const val = input.value;
+            if(!val) return;
+
+            // 显示你的消息
+            chat.innerHTML += `<div class="msg user">${val}</div>`;
+            input.value = '';
+
+            // 调用千问接口
+            const res = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: "qwen-turbo",
+                    messages: [{role: "user", content: val}]
+                })
+            });
+
+            const data = await res.json();
+            const reply = data.choices[0].message.content;
+
+            // 显示AI的消息
+            chat.innerHTML += `<div class="msg bot">${marked.parse(reply)}</div>`;
+            chat.scrollTop = chat.scrollHeight;
+        }
+    </script>
+</body>
+</html>
