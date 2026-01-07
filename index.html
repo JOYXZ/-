@@ -8,23 +8,53 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            font-family: -apple-system, system-ui, sans-serif; 
             background: linear-gradient(135deg, #f8f9ff 0%, #eef2ff 100%); 
         }
         #chat::-webkit-scrollbar { display: none; }
-        .medical-card { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04); }
         
-        /* Markdown 样式美化 */
-        .bot-bubble table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; background: #ffffff; border-radius: 8px; overflow: hidden; }
-        .bot-bubble th { background: #f0f4ff; color: #1e3a8a; padding: 10px; text-align: left; border: 1px solid #e2e8f0; }
-        .bot-bubble td { padding: 10px; border: 1px solid #e2e8f0; color: #475569; }
-        .bot-bubble blockquote { border-left: 4px solid #3b82f6; background: #f0f7ff; padding: 12px; margin: 12px 0; border-radius: 4px; color: #1e40af; }
-        .bot-bubble h1 { font-size: 1.3rem; font-weight: bold; color: #1e3a8a; margin-bottom: 12px; border-bottom: 2px solid #e0e7ff; padding-bottom: 4px; }
-        .bot-bubble h2 { font-size: 1.1rem; font-weight: bold; color: #2563eb; margin-top: 18px; margin-bottom: 8px; }
+        /* 核心修复：防止表格错乱 */
+        .bot-bubble { 
+            word-break: break-word; 
+            overflow-wrap: break-word;
+        }
         
+        /* 表格容器：支持横向滑动，防止撑破屏幕 */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 12px 0;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .bot-bubble table {
+            width: 100%;
+            min-width: 400px; /* 保证表格内容不被挤成一团 */
+            border-collapse: collapse;
+            background: #ffffff;
+            font-size: 13px;
+        }
+        
+        .bot-bubble th { background: #f0f4ff; color: #1e3a8a; padding: 10px 8px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+        .bot-bubble td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; color: #475569; }
+        
+        /* 引用和标题美化 */
+        .bot-bubble blockquote {
+            border-left: 4px solid #3b82f6;
+            background: #f0f7ff;
+            padding: 12px;
+            margin: 12px 0;
+            border-radius: 4px;
+        }
+        
+        .bot-bubble h1 { font-size: 1.2rem; font-weight: bold; color: #1e3a8a; margin-bottom: 10px; border-bottom: 2px solid #e0e7ff; }
+        .bot-bubble h2 { font-size: 1.05rem; font-weight: bold; color: #2563eb; margin-top: 15px; }
+
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .glass-footer { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .glass-footer { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
@@ -33,20 +63,16 @@
         <div class="flex justify-between items-center mb-4">
             <div>
                 <p class="text-blue-500 font-medium text-sm">Professional Nutritionist</p>
-                <h1 class="text-2xl font-bold text-gray-900 leading-tight">AI 营养分析助手</h1>
+                <h1 class="text-2xl font-bold text-gray-900">AI 营养分析助手</h1>
             </div>
             <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-blue-50"><span class="text-2xl">🥗</span></div>
-        </div>
-        <div class="bg-blue-600/5 border border-blue-100/50 rounded-2xl p-4 flex items-center gap-3 medical-card">
-            <span class="text-blue-600 text-lg">🔍</span>
-            <span class="text-blue-800 text-xs font-medium">重点分析：核心营养素、添加剂风险及健康评分。</span>
         </div>
     </header>
 
     <main id="chat" class="flex-1 overflow-y-auto px-6 space-y-6 pb-32">
         <div class="flex flex-col items-center justify-center py-12 opacity-30 text-center">
             <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-4xl mb-4">📸</div>
-            <p class="text-gray-600 font-medium">请拍摄并发送食品标签照片</p>
+            <p class="text-gray-600 font-medium text-sm">拍摄成分表，获取结构化健康报告</p>
         </div>
     </main>
 
@@ -59,22 +85,27 @@
 
     <footer class="fixed bottom-0 inset-x-0 glass-footer border-t border-gray-100 pb-10 pt-4 px-6 z-40">
         <div class="max-w-2xl mx-auto flex items-center gap-4">
-            <label class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition-all cursor-pointer">
+            <label class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-all cursor-pointer">
                 <span class="text-2xl text-white">📸</span>
                 <input type="file" id="fileInput" hidden accept="image/*" onchange="handleFile()">
             </label>
-            <div class="flex-1 bg-white border border-gray-200 rounded-2xl shadow-sm flex items-center px-4 h-14 focus-within:border-blue-400 transition-colors">
-                <input id="userInput" type="text" class="w-full bg-transparent outline-none text-gray-700 text-[16px]" placeholder="补充要求或直接发送...">
+            <div class="flex-1 bg-white border border-gray-200 rounded-2xl shadow-sm flex items-center px-4 h-14 focus-within:border-blue-400">
+                <input id="userInput" type="text" class="w-full bg-transparent outline-none text-gray-700 text-[16px]" placeholder="补充要求...">
                 <button onclick="sendMessage()" class="ml-2 text-blue-600 font-bold">发送</button>
             </div>
         </div>
-        <div class="w-32 h-1.5 bg-gray-200/60 mx-auto mt-6 rounded-full"></div>
     </footer>
 
     <script>
         const API_KEY = 'sk-6f30d07d56ad422ab4f9c515c3e19aff'; 
         const API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
         let currentBase64 = "";
+
+        // 配置 marked 选项
+        marked.setOptions({
+            breaks: true, // 支持回车换行
+            gfm: true     // 启用 GitHub 风格的 Markdown (支持表格)
+        });
 
         function handleFile() {
             const file = document.getElementById('fileInput').files[0];
@@ -97,9 +128,16 @@
         function appendMessage(role, content) {
             const chat = document.getElementById('chat');
             const wrapper = document.createElement('div');
-            wrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`;
-            let bubbleStyle = role === 'user' ? 'bg-blue-600 text-white rounded-2xl rounded-tr-none medical-card px-5 py-3' : 'bg-white text-gray-800 rounded-2xl rounded-tl-none medical-card p-6 border border-gray-50 bot-bubble';
-            wrapper.innerHTML = `<div class="${bubbleStyle} max-w-[92%] leading-relaxed text-[15px] shadow-sm">${role === 'bot' ? marked.parse(content) : content}</div>`;
+            wrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in w-full`;
+            
+            let bubbleStyle = role === 'user' 
+                ? 'bg-blue-600 text-white rounded-2xl rounded-tr-none px-4 py-2 shadow-md' 
+                : 'bg-white text-gray-800 rounded-2xl rounded-tl-none border border-gray-100 p-4 bot-bubble w-full medical-card';
+            
+            // 关键：给 bot 的回答包裹一个表格容器
+            let finalContent = role === 'bot' ? marked.parse(content).replace(/<table>/g, '<div class="table-container"><table>').replace(/<\/table>/g, '</table></div>') : content;
+            
+            wrapper.innerHTML = `<div class="${bubbleStyle} max-w-[95%] leading-relaxed text-[15px]">${finalContent}</div>`;
             chat.appendChild(wrapper);
             chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
             return wrapper;
@@ -117,7 +155,7 @@
             input.value = "";
             clearImage();
 
-            const loading = appendMessage('bot', `<div class="flex items-center space-x-2 py-2"><div class="w-2 h-2.5 bg-blue-500 rounded-full animate-bounce"></div><div class="w-2 h-2.5 bg-blue-500 rounded-full animate-bounce" style="animation-delay:0.2s"></div><div class="w-2 h-2.5 bg-blue-500 rounded-full animate-bounce" style="animation-delay:0.4s"></div><span class="text-blue-600 font-medium ml-2 text-sm">正在深度分析...</span></div>`);
+            const loading = appendMessage('bot', `<div class="flex items-center space-x-2 py-1"><div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div><div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay:0.2s"></div><span class="text-blue-600 text-sm ml-2">正在深度分析...</span></div>`);
 
             try {
                 const response = await fetch(API_URL, {
@@ -128,16 +166,20 @@
                         messages: [
                             { 
                                 role: "system", 
-                                content: "你是一个专业的资深营养师。你的任务是：1.识别照片中的食品标签数据；2.分析营养成分表和配料表；3.评估健康程度并打分（10分制）；4.列举优缺点。注意：严禁在回答中出现关于保质期、生产日期、储存方式、包装规格等非营养相关的信息。请直接聚焦于营养价值和成分安全。输出格式请使用精美的 Markdown 表格和列表。" 
+                                content: "你是一个专业的资深营养师。任务：1.识别食品标签数据；2.评估健康度并打分；3.列举优缺点。严禁出现保质期、生产日期、储存方式信息。输出格式：使用 Markdown 标题、列表和表格。注意：表格每一列的内容要简练，避免过长导致手机端排版错乱。" 
                             },
                             { role: "user", content: content }
                         ]
                     })
                 });
                 const data = await response.json();
-                loading.innerHTML = marked.parse(data.choices[0].message.content);
+                const result = data.choices[0].message.content;
+                
+                // 更新加载消息为正式内容
+                let formattedResult = marked.parse(result).replace(/<table>/g, '<div class="table-container"><table>').replace(/<\/table>/g, '</table></div>');
+                loading.innerHTML = formattedResult;
             } catch (e) {
-                loading.innerHTML = `<p class="text-red-500">❌ 分析失败，请稍后重试。</p>`;
+                loading.innerHTML = `<p class="text-red-500 text-sm">❌ 分析超时，请检查图片清晰度或重试。</p>`;
             }
             chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
         }
