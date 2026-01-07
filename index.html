@@ -9,88 +9,89 @@
     <style>
         body { 
             font-family: -apple-system, system-ui, sans-serif; 
-            background: linear-gradient(135deg, #f8f9ff 0%, #eef2ff 100%); 
+            background: #F8F9FE; 
         }
         #chat::-webkit-scrollbar { display: none; }
         
-        /* 核心修复：防止表格错乱 */
+        /* 针对 bot 回答的深度美化 */
         .bot-bubble { 
-            word-break: break-word; 
-            overflow-wrap: break-word;
-        }
-        
-        /* 表格容器：支持横向滑动，防止撑破屏幕 */
-        .table-container {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            margin: 12px 0;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
+            color: #2D3748;
+            line-height: 1.8;
         }
 
-        .bot-bubble table {
-            width: 100%;
-            min-width: 400px; /* 保证表格内容不被挤成一团 */
-            border-collapse: collapse;
-            background: #ffffff;
-            font-size: 13px;
+        /* 将列表美化为纵向卡片感 */
+        .bot-bubble ul, .bot-bubble ol {
+            padding-left: 0;
+            list-style: none;
+            margin: 15px 0;
         }
+
+        .bot-bubble li {
+            background: #FFFFFF;
+            border: 1px solid #EDF2F7;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            position: relative;
+        }
+
+        .bot-bubble h1 { font-size: 1.3rem; font-weight: 800; color: #1A365D; margin: 20px 0 15px 0; display: flex; align-items: center; }
+        .bot-bubble h2 { font-size: 1.1rem; font-weight: 700; color: #2B6CB0; margin-top: 25px; border-left: 4px solid #4299E1; padding-left: 10px; }
         
-        .bot-bubble th { background: #f0f4ff; color: #1e3a8a; padding: 10px 8px; text-align: left; border-bottom: 2px solid #e2e8f0; }
-        .bot-bubble td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; color: #475569; }
+        /* 强调文字样式 */
+        .bot-bubble strong { color: #2D3748; font-weight: 700; }
         
-        /* 引用和标题美化 */
         .bot-bubble blockquote {
-            border-left: 4px solid #3b82f6;
-            background: #f0f7ff;
-            padding: 12px;
-            margin: 12px 0;
-            border-radius: 4px;
+            background: #EBF8FF;
+            border-radius: 15px;
+            padding: 15px;
+            color: #2C5282;
+            font-weight: bold;
+            margin: 15px 0;
+            border: none;
         }
-        
-        .bot-bubble h1 { font-size: 1.2rem; font-weight: bold; color: #1e3a8a; margin-bottom: 10px; border-bottom: 2px solid #e0e7ff; }
-        .bot-bubble h2 { font-size: 1.05rem; font-weight: bold; color: #2563eb; margin-top: 15px; }
 
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .glass-footer { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .glass-footer { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
 
-    <header class="px-6 pt-10 pb-4 shrink-0">
-        <div class="flex justify-between items-center mb-4">
+    <header class="px-6 pt-10 pb-4 shrink-0 bg-white shadow-sm">
+        <div class="flex justify-between items-center">
             <div>
-                <p class="text-blue-500 font-medium text-sm">Professional Nutritionist</p>
-                <h1 class="text-2xl font-bold text-gray-900">AI 营养分析助手</h1>
+                <p class="text-blue-500 font-bold text-xs uppercase tracking-wider">Health Coach</p>
+                <h1 class="text-2xl font-black text-slate-800">AI 营养助手</h1>
             </div>
-            <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-blue-50"><span class="text-2xl">🥗</span></div>
+            <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-2xl shadow-inner">🥗</div>
         </div>
     </header>
 
-    <main id="chat" class="flex-1 overflow-y-auto px-6 space-y-6 pb-32">
-        <div class="flex flex-col items-center justify-center py-12 opacity-30 text-center">
-            <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-4xl mb-4">📸</div>
-            <p class="text-gray-600 font-medium text-sm">拍摄成分表，获取结构化健康报告</p>
+    <main id="chat" class="flex-1 overflow-y-auto px-5 space-y-6 pb-32 pt-4">
+        <div class="flex justify-start animate-fade-in">
+            <div class="bg-white p-5 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 bot-bubble max-w-[90%] text-sm">
+                👋 你好！我是你的私人营养师。<br>请拍摄食品包装上的<strong>“营养成分表”</strong>，我将为你生成纵向深度分析报告。
+            </div>
         </div>
     </main>
 
     <div id="preview-container" class="fixed bottom-36 left-6 hidden z-50">
-        <div class="relative group">
-            <img id="preview" class="w-28 h-28 object-cover rounded-2xl border-4 border-white shadow-2xl">
-            <button onclick="clearImage()" class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-lg font-bold">✕</button>
+        <div class="relative">
+            <img id="preview" class="w-24 h-24 object-cover rounded-2xl border-4 border-white shadow-xl">
+            <button onclick="clearImage()" class="absolute -top-3 -right-3 bg-slate-800 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-lg">✕</button>
         </div>
     </div>
 
-    <footer class="fixed bottom-0 inset-x-0 glass-footer border-t border-gray-100 pb-10 pt-4 px-6 z-40">
+    <footer class="fixed bottom-0 inset-x-0 glass-footer border-t border-slate-100 pb-10 pt-4 px-6 z-40">
         <div class="max-w-2xl mx-auto flex items-center gap-4">
             <label class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-all cursor-pointer">
                 <span class="text-2xl text-white">📸</span>
                 <input type="file" id="fileInput" hidden accept="image/*" onchange="handleFile()">
             </label>
-            <div class="flex-1 bg-white border border-gray-200 rounded-2xl shadow-sm flex items-center px-4 h-14 focus-within:border-blue-400">
-                <input id="userInput" type="text" class="w-full bg-transparent outline-none text-gray-700 text-[16px]" placeholder="补充要求...">
+            <div class="flex-1 bg-slate-50 border border-slate-200 rounded-2xl flex items-center px-4 h-14">
+                <input id="userInput" type="text" class="w-full bg-transparent outline-none text-slate-700 text-[16px]" placeholder="补充要求...">
                 <button onclick="sendMessage()" class="ml-2 text-blue-600 font-bold">发送</button>
             </div>
         </div>
@@ -100,12 +101,6 @@
         const API_KEY = 'sk-6f30d07d56ad422ab4f9c515c3e19aff'; 
         const API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
         let currentBase64 = "";
-
-        // 配置 marked 选项
-        marked.setOptions({
-            breaks: true, // 支持回车换行
-            gfm: true     // 启用 GitHub 风格的 Markdown (支持表格)
-        });
 
         function handleFile() {
             const file = document.getElementById('fileInput').files[0];
@@ -132,12 +127,11 @@
             
             let bubbleStyle = role === 'user' 
                 ? 'bg-blue-600 text-white rounded-2xl rounded-tr-none px-4 py-2 shadow-md' 
-                : 'bg-white text-gray-800 rounded-2xl rounded-tl-none border border-gray-100 p-4 bot-bubble w-full medical-card';
+                : 'bg-transparent w-full bot-bubble';
             
-            // 关键：给 bot 的回答包裹一个表格容器
-            let finalContent = role === 'bot' ? marked.parse(content).replace(/<table>/g, '<div class="table-container"><table>').replace(/<\/table>/g, '</table></div>') : content;
+            let finalContent = role === 'bot' ? marked.parse(content) : content;
+            wrapper.innerHTML = `<div class="${bubbleStyle} max-w-[100%]">${finalContent}</div>`;
             
-            wrapper.innerHTML = `<div class="${bubbleStyle} max-w-[95%] leading-relaxed text-[15px]">${finalContent}</div>`;
             chat.appendChild(wrapper);
             chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
             return wrapper;
@@ -148,14 +142,14 @@
             const text = input.value.trim();
             if (!text && !currentBase64) return;
 
-            appendMessage('user', text || "🔎 正在分析食品标签...");
-            const content = [{ type: "text", text: text || "请分析此食品标签。" }];
+            appendMessage('user', text || "🔎 正在深度扫描成分...");
+            const content = [{ type: "text", text: text || "分析此食品。" }];
             if (currentBase64) content.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${currentBase64}` } });
 
             input.value = "";
             clearImage();
 
-            const loading = appendMessage('bot', `<div class="flex items-center space-x-2 py-1"><div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div><div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay:0.2s"></div><span class="text-blue-600 text-sm ml-2">正在深度分析...</span></div>`);
+            const loading = appendMessage('bot', `<div class="bg-white p-4 rounded-xl inline-block shadow-sm">🧬 营养师正在审阅报告...</div>`);
 
             try {
                 const response = await fetch(API_URL, {
@@ -166,22 +160,33 @@
                         messages: [
                             { 
                                 role: "system", 
-                                content: "你是一个专业的资深营养师。任务：1.识别食品标签数据；2.评估健康度并打分；3.列举优缺点。严禁出现保质期、生产日期、储存方式信息。输出格式：使用 Markdown 标题、列表和表格。注意：表格每一列的内容要简练，避免过长导致手机端排版错乱。" 
+                                content: `你是一个专业的资深营养师。
+请严格按照以下纵向结构输出分析，【禁止使用表格】：
+
+一、营养成分分析（以每100克为单位）
+请使用无序列表格式列出核心成分。
+例如：
+- **热量**：[数据]（专家点评）
+- **蛋白质**：[数据]（专家点评）
+
+二、健康程度评估
+1. 优点：使用数字列表列出。
+2. 缺点：使用数字列表列出。
+
+三、综合评价
+直接给出综合评分 [分数]/10，并加粗显示。
+
+注意：严禁提及保质期、生产日期、储存方式等信息。请确保每一项分析都单独成行，方便手机阅读。` 
                             },
                             { role: "user", content: content }
                         ]
                     })
                 });
                 const data = await response.json();
-                const result = data.choices[0].message.content;
-                
-                // 更新加载消息为正式内容
-                let formattedResult = marked.parse(result).replace(/<table>/g, '<div class="table-container"><table>').replace(/<\/table>/g, '</table></div>');
-                loading.innerHTML = formattedResult;
+                loading.innerHTML = marked.parse(data.choices[0].message.content);
             } catch (e) {
-                loading.innerHTML = `<p class="text-red-500 text-sm">❌ 分析超时，请检查图片清晰度或重试。</p>`;
+                loading.innerHTML = `<p class="text-red-500 text-sm">分析中断，请重试。</p>`;
             }
-            chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
         }
     </script>
 </body>
